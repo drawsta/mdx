@@ -1,0 +1,38 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>star.intellijplugin.mdx</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Markdown X</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <!-- email="support@star.com" url="https://www.example.com" -->
+    <vendor>drawsta</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <!-- 插件描述移动到 README.md 中，此处不用写 description 标签 -->
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.intellij.plugins.markdown</depends>
+
+    <resource-bundle>messages.MarkdownXBundle</resource-bundle>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.lineMarkerProvider language="Markdown"
+                                        implementationClass="star.intellijplugin.mdx.codeInsight.MarkdownToJavaLineMarkerProvider"/>
+        <codeInsight.lineMarkerProvider language="JAVA"
+                                        implementationClass="star.intellijplugin.mdx.codeInsight.JavaToMarkdownLineMarkerProvider"/>
+        <renamePsiElementProcessor
+            implementation="star.intellijplugin.mdx.refactoring.MarkdownJavaClassRenameProcessor"/>
+        <psi.referenceContributor language="Markdown"
+                                  implementation="star.intellijplugin.mdx.psi.MarkdownJavaReferenceContributor"/>
+    </extensions>
+</idea-plugin>
