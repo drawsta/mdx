@@ -6,7 +6,7 @@ import com.intellij.codeInsight.daemon.LineMarkerProvider
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.psi.JavaPsiFacade
-import com.intellij.psi.PsiClass
+import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import org.intellij.plugins.markdown.lang.psi.impl.MarkdownParagraph
@@ -19,28 +19,50 @@ import java.awt.event.MouseEvent
  */
 class MarkdownToJavaLineMarkerProvider : LineMarkerProvider {
 
-    private val regex = """@java-class\s+([\w.]+)""".toRegex()
+    private val classRegex = """@java-class\s+([\w.]+)""".toRegex()
+
+    private val methodRegex = """@java-method\s+([\w.]+)#(\w+)""".toRegex()
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         if (element !is MarkdownParagraph) return null
         val text = element.text
-        val matchResult = regex.find(text) ?: return null
-        val className = matchResult.groupValues[1]
         val project = element.project
-        val psiClass = JavaPsiFacade.getInstance(project)
-            .findClass(className, GlobalSearchScope.allScope(project)) ?: return null
+        val psiFacade = JavaPsiFacade.getInstance(project)
 
+        // 处理 @java-class
+        classRegex.find(text)?.let { match ->
+            val className = match.groupValues[1]
+            val psiClass = psiFacade.findClass(className, GlobalSearchScope.allScope(project)) ?: return null
+            return createLineMarker(element, "跳转到 $className", psiClass)
+        }
+
+        // 处理 @java-method
+        methodRegex.find(text)?.let { match ->
+            val className = match.groupValues[1]
+            val methodName = match.groupValues[2]
+            val psiClass = psiFacade.findClass(className, GlobalSearchScope.allScope(project)) ?: return null
+            val psiMethod = psiClass.findMethodsByName(methodName, false).firstOrNull() ?: return null
+            return createLineMarker(element, "跳转到 $className#$methodName", psiMethod)
+        }
+
+        return null
+    }
+
+    private fun createLineMarker(
+        element: PsiElement,
+        tooltip: String,
+        target: NavigatablePsiElement
+    ): LineMarkerInfo<PsiElement> {
         return LineMarkerInfo(
             element, element.textRange, AllIcons.Nodes.Class,
-            { "跳转到 $className" }, JavaClassNavigationHandler(psiClass),
-            GutterIconRenderer.Alignment.LEFT,
-            { "跳转到 $className" }
+            { tooltip }, JavaClassNavigationHandler(target),
+            GutterIconRenderer.Alignment.LEFT, { tooltip }
         )
     }
 }
 
-class JavaClassNavigationHandler(private val psiClass: PsiClass) : GutterIconNavigationHandler<PsiElement> {
+class JavaClassNavigationHandler(private val target: NavigatablePsiElement) : GutterIconNavigationHandler<PsiElement> {
     override fun navigate(event: MouseEvent?, element: PsiElement?) {
-        psiClass.navigate(true)
+        target.navigate(true)
     }
 }
